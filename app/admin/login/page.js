@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import Cookies from "js-cookie";
+import { useApi } from "@/hook/useApi";
 
 export default function AdminLogin() {
+  const { request } = useApi();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,17 +21,25 @@ export default function AdminLogin() {
 
     try {
       // Point this to your modular Express backend
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          username,
-          password,
-        },
-      );
+      //   const response = await axios.post(
+      //     "http://localhost:5000/api/auth/login",
+      //     {
+      //       username,
+      //       password,
+      //     },
+      //   );
 
-      if (response.data.success) {
+      const response = await request({
+        method: "POST",
+        url: "/auth/login",
+        data: { username, password },
+      });
+
+    //   console.log(response);
+
+      if (response.success) {
         // Store the JWT in a cookie for 7 days
-        Cookies.set("admin_token", response.data.token, { expires: 7 });
+        Cookies.set("admin_token", response.token, { expires: 7 });
 
         // Redirect to the protected dashboard
         router.push("/admin/dashboard");
