@@ -34,11 +34,13 @@ export default function BuffetManagerPage() {
 
   const loadData = async () => {
     setLoading(true);
+
     try {
       const [dishesRes, schedRes] = await Promise.all([
         request({ method: "GET", url: "/menu/regular" }),
         request({ method: "GET", url: "/menu/buffet" }),
       ]);
+
       setAllDishes(dishesRes?.data || []);
       setSchedules(schedRes?.data || []);
     } catch (err) {
@@ -54,10 +56,13 @@ export default function BuffetManagerPage() {
 
   const handleDateChange = (e) => {
     const dateStr = e.target.value;
+
     setSelectedDate(dateStr);
+
     if (!dateStr) return;
 
     const dayIndex = new Date(dateStr).getDay();
+
     const mapDayToWeekday = [
       "Sunnuntai / Sunday",
       "Maanantai / Monday",
@@ -67,18 +72,22 @@ export default function BuffetManagerPage() {
       "Perjantai / Friday",
       "Lauantai / Saturday",
     ];
+
     setSelectedWeekday(mapDayToWeekday[dayIndex]);
   };
 
   const toggleDishSelection = (id) => {
     setSelectedDishIds((prev) =>
-      prev.includes(id) ? prev.filter((dishId) => dishId !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((dishId) => dishId !== id)
+        : [...prev, id],
     );
   };
 
-  // Extract unique bilingual categories from the loaded dishes
+  // Extract unique bilingual categories
   const categories = useMemo(() => {
     const unique = new Map();
+
     allDishes.forEach((d) => {
       if (d.categoryEn && !unique.has(d.categoryEn)) {
         unique.set(d.categoryEn, d.categoryFi || d.categoryEn);
@@ -118,10 +127,15 @@ export default function BuffetManagerPage() {
 
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
+
     if (!selectedDate) {
-      setMessage({ text: "Please pick a calendar date.", type: "error" });
+      setMessage({
+        text: "Please pick a calendar date.",
+        type: "error",
+      });
       return;
     }
+
     if (selectedDishIds.length === 0) {
       setMessage({
         text: "Please select at least one dish from the list below.",
@@ -144,9 +158,14 @@ export default function BuffetManagerPage() {
         },
       });
 
-      setMessage({ text: "Buffet schedule successfully saved!", type: "success" });
+      setMessage({
+        text: "Buffet schedule successfully saved!",
+        type: "success",
+      });
+
       setSelectedDate("");
       setSelectedDishIds([]);
+
       loadData();
     } catch (err) {
       setMessage({
@@ -159,10 +178,20 @@ export default function BuffetManagerPage() {
   };
 
   const handleDeleteSchedule = async (id, dateStr) => {
-    if (!window.confirm(`Delete buffet schedule for ${new Date(dateStr).toLocaleDateString()}?`))
+    if (
+      !window.confirm(
+        `Delete buffet schedule for ${new Date(dateStr).toLocaleDateString()}?`,
+      )
+    ) {
       return;
+    }
+
     try {
-      await request({ method: "DELETE", url: `/menu/buffet/${id}` });
+      await request({
+        method: "DELETE",
+        url: `/menu/buffet/${id}`,
+      });
+
       loadData();
     } catch (err) {
       console.error("Failed to delete buffet schedule:", err);
@@ -170,19 +199,23 @@ export default function BuffetManagerPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 py-4">
+    <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-0 py-4 sm:py-6 space-y-6 sm:space-y-8 lg:space-y-10">
+      {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           Buffet Schedule Manager
         </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Pick a date, select dishes directly from your catalog, and assign them to the daily buffet.
+
+        <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed max-w-3xl">
+          Pick a date, select dishes directly from your catalog, and assign them
+          to the daily buffet.
         </p>
       </div>
 
+      {/* Message */}
       {message.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium ${
+          className={`p-3 sm:p-4 rounded-xl text-xs sm:text-sm font-medium ${
             message.type === "success"
               ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
               : "bg-rose-50 text-rose-800 border border-rose-200"
@@ -193,30 +226,36 @@ export default function BuffetManagerPage() {
       )}
 
       {/* Schedule Configuration Card */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs p-6 md:p-8 space-y-6">
-        <form onSubmit={handleScheduleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl shadow-xs p-4 sm:p-6 md:p-8">
+        <form
+          onSubmit={handleScheduleSubmit}
+          className="space-y-5 sm:space-y-6"
+        >
+          {/* Date + Weekday */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                 Buffet Date
               </label>
+
               <input
                 type="date"
                 required
                 value={selectedDate}
                 onChange={handleDateChange}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500"
+                className="w-full min-h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                 Weekday
               </label>
+
               <select
                 value={selectedWeekday}
                 onChange={(e) => setSelectedWeekday(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500"
+                className="w-full min-h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 transition"
               >
                 {WEEKDAYS.map((day) => (
                   <option key={day} value={day}>
@@ -228,21 +267,31 @@ export default function BuffetManagerPage() {
           </div>
 
           {/* Dish Selection Workspace */}
-          <div className="space-y-3 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
-                Choose Dishes ({selectedDishIds.length} Selected)
-              </label>
+          <div className="space-y-3 pt-1 sm:pt-2">
+            {/* Section header */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="block text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  Choose Dishes
+                </label>
 
-              <div className="flex items-center gap-2">
+                <span className="shrink-0 inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-amber-800">
+                  {selectedDishIds.length} Selected
+                </span>
+              </div>
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:border-amber-500"
+                  className="w-full min-h-10 text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:border-amber-500"
                 >
                   {categories.map((cat) => (
                     <option key={cat.en} value={cat.en}>
-                      {cat.en === "ALL" ? "All Categories / Kaikki" : `${cat.en} — ${cat.fi}`}
+                      {cat.en === "ALL"
+                        ? "All Categories / Kaikki"
+                        : `${cat.en} — ${cat.fi}`}
                     </option>
                   ))}
                 </select>
@@ -252,44 +301,47 @@ export default function BuffetManagerPage() {
                   placeholder="Filter dishes (EN / FI)..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+                  className="w-full min-h-10 text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-500"
                 />
               </div>
             </div>
 
             {/* Dishes Selection Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto p-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 max-h-[22rem] sm:max-h-80 overflow-y-auto p-2 sm:p-3 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200">
               {loading ? (
                 <p className="text-xs text-slate-400 col-span-full py-8 text-center">
                   Loading dishes catalog...
                 </p>
               ) : allDishes.length === 0 ? (
-                <p className="text-xs text-slate-400 col-span-full py-8 text-center">
-                  No dishes registered yet. Add dishes in the "Add New Dish" tab first.
+                <p className="text-xs text-slate-400 col-span-full py-8 text-center px-4">
+                  No dishes registered yet. Add dishes in the &quot;Add New
+                  Dish&quot; tab first.
                 </p>
               ) : filteredDishes.length === 0 ? (
-                <p className="text-xs text-slate-400 col-span-full py-8 text-center">
+                <p className="text-xs text-slate-400 col-span-full py-8 text-center px-4">
                   No dishes match the filter criteria.
                 </p>
               ) : (
                 filteredDishes.map((dish) => {
                   const isSelected = selectedDishIds.includes(dish.id);
+
                   return (
                     <div
                       key={dish.id}
                       onClick={() => toggleDishSelection(dish.id)}
-                      className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                      className={`min-w-0 p-2.5 sm:p-3 rounded-xl border flex items-center gap-2.5 sm:gap-3 cursor-pointer transition-all select-none ${
                         isSelected
                           ? "bg-amber-50 border-amber-300 shadow-xs"
-                          : "bg-white border-slate-200 hover:border-slate-300"
+                          : "bg-white border-slate-200 hover:border-slate-300 active:bg-slate-50"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}}
-                        className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 pointer-events-none"
+                        className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 pointer-events-none shrink-0"
                       />
+
                       {dish.imageUrl ? (
                         <Image
                           src={dish.imageUrl}
@@ -297,21 +349,24 @@ export default function BuffetManagerPage() {
                           width={36}
                           height={36}
                           unoptimized
-                          className="w-9 h-9 object-cover rounded-lg shrink-0 border border-slate-200"
+                          className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg shrink-0 border border-slate-200"
                         />
                       ) : (
-                        <div className="w-9 h-9 bg-slate-100 rounded-lg shrink-0 flex items-center justify-center text-[10px] text-slate-400 font-bold">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-slate-100 rounded-lg shrink-0 flex items-center justify-center text-[9px] sm:text-[10px] text-slate-400 font-bold">
                           N/A
                         </div>
                       )}
+
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-slate-900 truncate leading-tight">
                           {dish.nameEn}
                         </p>
+
                         <p className="text-[10px] text-slate-500 truncate mt-0.5">
                           {dish.nameFi}
                         </p>
-                        <span className="inline-block text-[9px] text-amber-800 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50 mt-1">
+
+                        <span className="inline-block max-w-full truncate text-[9px] text-amber-800 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/50 mt-1">
                           {dish.categoryEn}
                         </span>
                       </div>
@@ -322,23 +377,32 @@ export default function BuffetManagerPage() {
             </div>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-xs hover:shadow-md disabled:opacity-60"
+            className="w-full min-h-11 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-xs hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {submitting ? "Saving Buffet..." : "Publish Daily Buffet Schedule"}
           </button>
         </form>
       </div>
 
-      {/* Active Schedules Table */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs p-6 md:p-8">
-        <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-4">
-          Active Scheduled Buffets
-        </h3>
+      {/* Active Schedules */}
+      <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl shadow-xs p-4 sm:p-6 md:p-8">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+            Active Scheduled Buffets
+          </h3>
 
-        <div className="overflow-x-auto">
+          <span className="text-[10px] sm:text-xs text-slate-500 shrink-0">
+            {schedules.length}{" "}
+            {schedules.length === 1 ? "schedule" : "schedules"}
+          </span>
+        </div>
+
+        {/* Desktop / Tablet Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -348,6 +412,7 @@ export default function BuffetManagerPage() {
                 <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100 text-sm">
               {loading ? (
                 <tr>
@@ -363,19 +428,24 @@ export default function BuffetManagerPage() {
                 </tr>
               ) : (
                 schedules.map((sched) => (
-                  <tr key={sched.id} className="hover:bg-slate-50/60 transition-colors">
+                  <tr
+                    key={sched.id}
+                    className="hover:bg-slate-50/60 transition-colors"
+                  >
                     <td className="py-3 px-3 font-semibold text-slate-900 whitespace-nowrap">
                       {new Date(sched.date).toLocaleDateString()}
                     </td>
+
                     <td className="py-3 px-3 text-slate-600 whitespace-nowrap">
                       {sched.weekday}
                     </td>
+
                     <td className="py-3 px-3">
                       <div className="flex flex-wrap gap-1.5">
                         {sched.dishes?.map((dish) => (
                           <span
                             key={dish.id}
-                            className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200/60 rounded-lg"
+                            className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200/60 rounded-lg max-w-full"
                           >
                             {dish.imageUrl && (
                               <Image
@@ -387,18 +457,24 @@ export default function BuffetManagerPage() {
                                 className="w-4 h-4 rounded-full object-cover shrink-0"
                               />
                             )}
-                            <span>
+
+                            <span className="truncate">
                               <strong>{dish.nameEn}</strong>{" "}
-                              <span className="text-amber-700/80">({dish.nameFi})</span>
+                              <span className="text-amber-700/80">
+                                ({dish.nameFi})
+                              </span>
                             </span>
                           </span>
                         ))}
                       </div>
                     </td>
+
                     <td className="py-3 px-3 text-right whitespace-nowrap">
                       <button
-                        onClick={() => handleDeleteSchedule(sched.id, sched.date)}
-                        className="px-3 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
+                        onClick={() =>
+                          handleDeleteSchedule(sched.id, sched.date)
+                        }
+                        className="px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
                       >
                         Remove
                       </button>
@@ -408,6 +484,80 @@ export default function BuffetManagerPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {loading ? (
+            <div className="py-8 text-center text-sm text-slate-400">
+              Loading schedules...
+            </div>
+          ) : schedules.length === 0 ? (
+            <div className="py-8 text-center text-sm text-slate-400">
+              No buffets scheduled yet.
+            </div>
+          ) : (
+            schedules.map((sched) => (
+              <div
+                key={sched.id}
+                className="rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 sm:p-4"
+              >
+                {/* Date / weekday */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">
+                      {new Date(sched.date).toLocaleDateString()}
+                    </p>
+
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {sched.weekday}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteSchedule(sched.id, sched.date)}
+                    className="shrink-0 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                {/* Dishes */}
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                    Dishes Included
+                  </p>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {sched.dishes?.map((dish) => (
+                      <span
+                        key={dish.id}
+                        className="inline-flex items-center gap-1.5 max-w-full text-[10px] px-2 py-1.5 bg-amber-50 text-amber-900 border border-amber-200/60 rounded-lg"
+                      >
+                        {dish.imageUrl && (
+                          <Image
+                            src={dish.imageUrl}
+                            alt={dish.nameEn || "Dish image"}
+                            width={16}
+                            height={16}
+                            unoptimized
+                            className="w-4 h-4 rounded-full object-cover shrink-0"
+                          />
+                        )}
+
+                        <span className="truncate">
+                          <strong>{dish.nameEn}</strong>{" "}
+                          <span className="text-amber-700/80">
+                            ({dish.nameFi})
+                          </span>
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

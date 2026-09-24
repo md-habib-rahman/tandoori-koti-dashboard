@@ -155,12 +155,19 @@ export default function AdminMessagesPage() {
 
   const getMessageId = (msg) => msg.id || msg._id;
 
+  const statusBadgeClasses = (isUnread, isReplied) =>
+    isUnread
+      ? "bg-amber-500/20 text-amber-500 border border-amber-500/40"
+      : isReplied
+        ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/40"
+        : "bg-slate-500/20 text-slate-500 border border-slate-500/30";
+
   return (
-    <div className="space-y-8 p-6 lg:p-10 max-w-7xl mx-auto text-brand-cream">
+    <div className="space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-10 max-w-7xl mx-auto text-brand-cream">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-gold/15 pb-6">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-brand-gold">
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-brand-gold">
             Inquiries & Messages
           </h1>
           <p className="text-xs text-brand-muted mt-1 font-sans">
@@ -168,14 +175,14 @@ export default function AdminMessagesPage() {
             requests.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="px-3.5 py-1.5 rounded-full bg-brand-gold/15 border border-brand-gold/30 text-brand-gold text-xs font-semibold">
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <span className="px-3.5 py-1.5 rounded-full bg-brand-gold/15 border border-brand-gold/30 text-brand-gold text-xs font-semibold whitespace-nowrap">
             {pagination.unreadCount} Unread
           </span>
           <button
             onClick={fetchMessages}
             disabled={loading}
-            className="p-2 border border-brand-gold/30 rounded-xl hover:bg-brand-card transition-colors text-brand-gold disabled:opacity-50"
+            className="p-2 border border-brand-gold/30 rounded-xl hover:bg-brand-card transition-colors text-brand-gold disabled:opacity-50 shrink-0"
             title="Refresh list"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -184,7 +191,7 @@ export default function AdminMessagesPage() {
       </div>
 
       {/* Filter & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-gold" />
@@ -201,7 +208,7 @@ export default function AdminMessagesPage() {
         </div>
 
         {/* Status Filter Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           {["all", "unread", "read", "replied"].map((tab) => (
             <button
               key={tab}
@@ -209,7 +216,7 @@ export default function AdminMessagesPage() {
                 setStatusFilter(tab);
                 setPage(1);
               }}
-              className={`px-4 py-2 rounded-xl text-xs uppercase font-sans tracking-wider font-semibold transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs uppercase font-sans tracking-wider font-semibold transition-all shrink-0 ${
                 statusFilter === tab
                   ? "bg-brand-gold text-brand-darker shadow-sm"
                   : "bg-brand-card/60 text-brand-muted border border-brand-gold/15 hover:text-brand-cream"
@@ -221,7 +228,7 @@ export default function AdminMessagesPage() {
         </div>
       </div>
 
-      {/* Messages Table */}
+      {/* Messages List */}
       <div className="border border-brand-gold/15 rounded-2xl bg-brand-card/50 overflow-hidden backdrop-blur-sm">
         {loading && messages.length === 0 ? (
           <div className="p-16 text-center text-xs text-brand-muted">
@@ -232,80 +239,169 @@ export default function AdminMessagesPage() {
             No messages found.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
-              <thead className="bg-brand-darker/60 border-b border-brand-gold/15 uppercase text-[10px] tracking-wider text-brand-muted">
-                <tr>
-                  <th className="p-4">Sender</th>
-                  <th className="p-4">Contact</th>
-                  <th className="p-4">Snippet</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4">Date</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-brand-gold/10">
-                {messages.map((msg) => {
-                  const id = getMessageId(msg);
-                  const isUnread =
-                    msg.status === "UNREAD" || msg.status === "unread";
-                  const isReplied =
-                    msg.status === "REPLIED" || msg.status === "replied";
+          <>
+            {/* Desktop / tablet table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs font-sans">
+                <thead className="bg-brand-darker/60 border-b border-brand-gold/15 uppercase text-[10px] tracking-wider text-brand-muted">
+                  <tr>
+                    <th className="p-4">Sender</th>
+                    <th className="p-4">Contact</th>
+                    <th className="p-4">Snippet</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4">Date</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-brand-gold/10">
+                  {messages.map((msg) => {
+                    const id = getMessageId(msg);
+                    const isUnread =
+                      msg.status === "UNREAD" || msg.status === "unread";
+                    const isReplied =
+                      msg.status === "REPLIED" || msg.status === "replied";
 
-                  return (
-                    <tr
-                      key={id}
-                      className={`hover:bg-brand-gold/5 transition-colors ${
-                        isUnread ? "bg-brand-gold/10 font-semibold" : ""
-                      }`}
-                    >
-                      <td className="p-4 text-brand-cream">
-                        <div className="flex items-center gap-2">
-                          {isUnread && (
-                            <span className="w-2 h-2 rounded-full bg-brand-gold shrink-0" />
+                    return (
+                      <tr
+                        key={id}
+                        className={`hover:bg-brand-gold/5 transition-colors ${
+                          isUnread ? "bg-brand-gold/10 font-semibold" : ""
+                        }`}
+                      >
+                        <td className="p-4 text-brand-cream">
+                          <div className="flex items-center gap-2">
+                            {isUnread && (
+                              <span className="w-2 h-2 rounded-full bg-brand-gold shrink-0" />
+                            )}
+                            <span>{msg.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-brand-muted space-y-0.5">
+                          <p className="flex items-center gap-1.5 text-[11px]">
+                            <Mail className="w-3 h-3 text-brand-gold shrink-0" />{" "}
+                            {msg.email}
+                          </p>
+                          <p className="flex items-center gap-1.5 text-[11px]">
+                            <Phone className="w-3 h-3 text-brand-gold shrink-0" />{" "}
+                            {msg.phone}
+                          </p>
+                        </td>
+                        <td className="p-4 text-brand-muted max-w-xs truncate">
+                          {msg.message || (
+                            <span className="italic opacity-60">
+                              No message text
+                            </span>
                           )}
-                          <span>{msg.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-brand-muted space-y-0.5">
-                        <p className="flex items-center gap-1.5 text-[11px]">
-                          <Mail className="w-3 h-3 text-brand-gold shrink-0" />{" "}
-                          {msg.email}
-                        </p>
-                        <p className="flex items-center gap-1.5 text-[11px]">
-                          <Phone className="w-3 h-3 text-brand-gold shrink-0" />{" "}
-                          {msg.phone}
-                        </p>
-                      </td>
-                      <td className="p-4 text-brand-muted max-w-xs truncate">
-                        {msg.message || (
-                          <span className="italic opacity-60">
-                            No message text
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`inline-block px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${statusBadgeClasses(
+                              isUnread,
+                              isReplied,
+                            )}`}
+                          >
+                            {msg.status}
                           </span>
+                        </td>
+                        <td className="p-4 text-brand-muted text-[11px]">
+                          {new Date(msg.createdAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => openMessageModal(msg)}
+                            className="p-1.5 hover:text-brand-gold transition-colors text-brand-muted"
+                            title="View details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteMessage(id)}
+                            className="p-1.5 hover:text-rose-400 transition-colors text-brand-muted"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="md:hidden divide-y divide-brand-gold/10">
+              {messages.map((msg) => {
+                const id = getMessageId(msg);
+                const isUnread =
+                  msg.status === "UNREAD" || msg.status === "unread";
+                const isReplied =
+                  msg.status === "REPLIED" || msg.status === "replied";
+
+                return (
+                  <div
+                    key={id}
+                    className={`p-4 space-y-3 ${
+                      isUnread ? "bg-brand-gold/10" : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isUnread && (
+                          <span className="w-2 h-2 rounded-full bg-brand-gold shrink-0" />
                         )}
-                      </td>
-                      <td className="p-4">
                         <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${
-                            isUnread
-                              ? "bg-amber-500/20 text-amber-500 border border-amber-500/40"
-                              : isReplied
-                                ? "bg-emerald-500/20 text-emerald-500 border border-emerald-500/40"
-                                : "bg-slate-500/20 text-slate-500 border border-slate-500/30"
+                          className={`text-sm text-brand-cream truncate ${
+                            isUnread ? "font-semibold" : ""
                           }`}
                         >
-                          {msg.status}
+                          {msg.name}
                         </span>
-                      </td>
-                      <td className="p-4 text-brand-muted text-[11px]">
+                      </div>
+                      <span
+                        className={`shrink-0 inline-block px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${statusBadgeClasses(
+                          isUnread,
+                          isReplied,
+                        )}`}
+                      >
+                        {msg.status}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-[11px] text-brand-muted">
+                      <p className="flex items-center gap-1.5 truncate">
+                        <Mail className="w-3 h-3 text-brand-gold shrink-0" />
+                        <span className="truncate">{msg.email}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5">
+                        <Phone className="w-3 h-3 text-brand-gold shrink-0" />
+                        {msg.phone}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-brand-muted line-clamp-2">
+                      {msg.message || (
+                        <span className="italic opacity-60">
+                          No message text
+                        </span>
+                      )}
+                    </p>
+
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <span className="text-[11px] text-brand-muted">
                         {new Date(msg.createdAt).toLocaleDateString("en-GB", {
                           day: "2-digit",
                           month: "short",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
-                      </td>
-                      <td className="p-4 text-right space-x-2">
+                      </span>
+                      <div className="flex items-center gap-3">
                         <button
                           onClick={() => openMessageModal(msg)}
                           className="p-1.5 hover:text-brand-gold transition-colors text-brand-muted"
@@ -320,37 +416,37 @@ export default function AdminMessagesPage() {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
       {/* Message Modal Preview */}
       {selectedMessage && (
         <div
-          className="fixed inset-0 z-[100] backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[100] backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
           onClick={() => setSelectedMessage(null)}
         >
           <div
-            className="bg-brand-darker border rounded-3xl max-w-xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative my-8"
+            className="bg-brand-darker border rounded-2xl sm:rounded-3xl max-w-xl w-full p-4 sm:p-6 lg:p-8 space-y-5 sm:space-y-6 shadow-2xl relative my-4 sm:my-8 max-h-[92vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => setSelectedMessage(null)}
-              className="absolute top-6 right-6 text-brand-muted hover:text-brand-cream transition-colors p-1"
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 text-brand-muted hover:text-brand-cream transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Header info */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
+            <div className="space-y-1 pr-8">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[10px] uppercase tracking-[0.25em] text-brand-gold font-bold">
                   Message Details
                 </span>
@@ -366,14 +462,14 @@ export default function AdminMessagesPage() {
                   {selectedMessage.status}
                 </span>
               </div>
-              <h2 className="text-2xl font-serif font-bold text-brand-cream">
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-brand-cream break-words">
                 {selectedMessage.name}
               </h2>
             </div>
 
             {/* Contact details */}
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-brand-card/70 border border-brand-gold/15 text-xs text-brand-muted">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-brand-card/70 border border-brand-gold/15 text-xs text-brand-muted">
+              <div className="min-w-0">
                 <span className="block text-brand-cream font-medium">
                   Email
                 </span>
@@ -384,13 +480,13 @@ export default function AdminMessagesPage() {
                   {selectedMessage.email}
                 </a>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="block text-brand-cream font-medium">
                   Phone
                 </span>
                 <a
                   href={`tel:${selectedMessage.phone}`}
-                  className="hover:text-brand-gold underline block"
+                  className="hover:text-brand-gold underline block truncate"
                 >
                   {selectedMessage.phone}
                 </a>
@@ -402,7 +498,7 @@ export default function AdminMessagesPage() {
               <span className="text-xs text-brand-gold uppercase tracking-wider font-semibold">
                 Message Content
               </span>
-              <div className="p-4 rounded-xl bg-brand-card/90 border border-brand-gold/15 text-sm text-brand-cream leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto">
+              <div className="p-4 rounded-xl bg-brand-card/90 border border-brand-gold/15 text-sm text-brand-cream leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto break-words">
                 {selectedMessage.message || (
                   <span className="text-brand-muted italic">
                     No text provided with this contact request.
@@ -412,7 +508,7 @@ export default function AdminMessagesPage() {
             </div>
 
             {/* Action Bar (Mark Read, Unread, Replied, Delete, Email) */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-brand-gold/15 text-xs">
+            <div className="flex flex-col gap-4 pt-4 border-t border-brand-gold/15 text-xs">
               <div className="flex flex-wrap items-center gap-2">
                 {selectedMessage.status?.toUpperCase() !== "REPLIED" && (
                   <button
@@ -455,7 +551,7 @@ export default function AdminMessagesPage() {
 
               <a
                 href={`mailto:${selectedMessage.email}?subject=Regarding your inquiry at Tandoori Koti`}
-                className="w-full sm:w-auto text-center px-5 py-2 rounded-xl bg-brand-gold text-brand-darker hover:bg-brand-goldLight font-bold uppercase tracking-wider text-[11px] transition-colors"
+                className="w-full text-center px-5 py-2.5 rounded-xl bg-brand-gold text-brand-darker hover:bg-brand-goldLight font-bold uppercase tracking-wider text-[11px] transition-colors"
               >
                 Reply via Email
               </a>

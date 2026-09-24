@@ -226,15 +226,15 @@ export default function AddDishAndManagePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 py-4">
+    <div className="max-w-6xl mx-auto space-y-8 sm:space-y-12 px-3 sm:px-4 lg:px-0 py-4">
       {/* ----------------- BILINGUAL FORM SECTION ----------------- */}
-      <div className="max-w-3xl mx-auto bg-white border border-slate-200/90 rounded-2xl shadow-xs p-8 md:p-10">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
+      <div className="max-w-3xl mx-auto bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl shadow-xs p-4 sm:p-8 md:p-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5 mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               {editingId ? "Edit Dish" : "Add New Dish"}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Configure dishes with bilingual metadata, culinary stories, and
               descriptions.
             </p>
@@ -243,7 +243,7 @@ export default function AddDishAndManagePage() {
             <button
               type="button"
               onClick={resetForm}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors self-start sm:self-auto shrink-0"
             >
               Cancel Edit
             </button>
@@ -252,7 +252,7 @@ export default function AddDishAndManagePage() {
 
         {message.text && (
           <div
-            className={`p-4 rounded-xl text-sm font-medium mb-6 ${
+            className={`p-3.5 sm:p-4 rounded-xl text-sm font-medium mb-6 ${
               message.type === "success"
                 ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                 : "bg-rose-50 text-rose-800 border border-rose-200"
@@ -351,7 +351,7 @@ export default function AddDishAndManagePage() {
 
           {/* Bilingual Culinary Story (Optional / Internal Background) */}
           <div className="space-y-3 pt-3 border-t border-slate-100">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <label className="block text-xs font-semibold uppercase tracking-wider text-amber-800">
                 Dish Story & Heritage (Optional)
               </label>
@@ -429,7 +429,7 @@ export default function AddDishAndManagePage() {
                   width={128}
                   height={128}
                   unoptimized
-                  className="w-32 h-32 object-cover rounded-xl shadow-xs border border-slate-200"
+                  className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-xl shadow-xs border border-slate-200"
                 />
                 <button
                   type="button"
@@ -446,7 +446,7 @@ export default function AddDishAndManagePage() {
             ) : (
               <label
                 htmlFor="dish-image-input"
-                className="block border-2 border-dashed border-slate-300 hover:border-amber-500/60 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-slate-50/50"
+                className="block border-2 border-dashed border-slate-300 hover:border-amber-500/60 rounded-2xl p-5 sm:p-6 text-center cursor-pointer transition-colors bg-slate-50/50"
               >
                 <div className="space-y-2">
                   <p className="text-sm text-slate-600">
@@ -487,11 +487,11 @@ export default function AddDishAndManagePage() {
         </form>
       </div>
 
-      {/* ----------------- DATA TABLE SECTION ----------------- */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs p-6 md:p-8">
+      {/* ----------------- DATA TABLE / LIST SECTION ----------------- */}
+      <div className="bg-white border border-slate-200/90 rounded-xl sm:rounded-2xl shadow-xs p-4 sm:p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
           <div>
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
               Registered Dishes Inventory
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -515,8 +515,8 @@ export default function AddDishAndManagePage() {
           </div>
         </div>
 
-        {/* Tabular List */}
-        <div className="overflow-x-auto mt-4">
+        {/* ---- Desktop / tablet: table (md and up) ---- */}
+        <div className="hidden md:block overflow-x-auto mt-4">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -619,8 +619,100 @@ export default function AddDishAndManagePage() {
           </table>
         </div>
 
+        {/* ---- Mobile: stacked cards (below md) ---- */}
+        <div className="md:hidden mt-4 space-y-3">
+          {loadingItems ? (
+            <div className="space-y-3 animate-pulse">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="border border-slate-200 rounded-xl p-3.5 flex gap-3"
+                >
+                  <div className="w-12 h-12 bg-slate-100 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-slate-100 rounded w-2/3" />
+                    <div className="h-2.5 bg-slate-100 rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : paginatedItems.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">
+              No dishes found matching your query.
+            </p>
+          ) : (
+            paginatedItems.map((item) => (
+              <div
+                key={item.id}
+                className="border border-slate-200 rounded-xl p-3.5 space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.nameEn || "Dish image"}
+                      width={48}
+                      height={48}
+                      unoptimized
+                      className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs font-semibold shrink-0">
+                      N/A
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 leading-tight truncate">
+                          {item.nameEn}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">
+                          {item.nameFi}
+                        </p>
+                      </div>
+                      <span className="font-bold text-slate-900 text-sm shrink-0">
+                        €{parseFloat(item.price).toFixed(2)}
+                      </span>
+                    </div>
+                    <span className="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/50 rounded-md">
+                      {item.categoryEn}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-600 pl-1">
+                  <p className="line-clamp-2 font-medium text-slate-700">
+                    {item.preparationEn}
+                  </p>
+                  {(item.storyEn || item.storyFi) && (
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                      Story Added
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                  <button
+                    onClick={() => handleEditClick(item)}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <PenLine size={14} /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id, item.nameEn)}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash size={14} /> Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-5 mt-4">
+        <div className="flex items-center justify-between border-t border-slate-100 pt-5 mt-4 gap-3">
           <p className="text-xs text-slate-500">
             Page{" "}
             <span className="font-semibold text-slate-800">{currentPage}</span>{" "}
@@ -634,7 +726,7 @@ export default function AddDishAndManagePage() {
               disabled={currentPage === 1}
               className="cursor-pointer px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <SkipBack />
+              <SkipBack size={16} />
             </button>
             <button
               onClick={() =>
@@ -643,7 +735,7 @@ export default function AddDishAndManagePage() {
               disabled={currentPage === totalPages}
               className="cursor-pointer px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <SkipForward />
+              <SkipForward size={16} />
             </button>
           </div>
         </div>
