@@ -1,21 +1,273 @@
 "use client";
 
-import { useState } from "react";
+// Save as: src/app/admin/layout.js  (replaces your current one)
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  CalendarCheck,
+  CalendarClock,
+  ExternalLink,
+  Flame,
+  ImageIcon,
+  Images,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  Star,
+  Truck,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
+
+// Navigation, grouped by what the owner is doing. A group without a label is a single stand-alone link.
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Menu and content",
+    items: [
+      { name: "Home Banner", href: "/admin/dashboard/hero", icon: ImageIcon },
+      {
+        name: "Add / Edit Dish",
+        href: "/admin/dashboard/add-dish",
+        icon: UtensilsCrossed,
+      },
+      {
+        name: "Buffet Schedule",
+        href: "/admin/dashboard/buffet",
+        icon: CalendarClock,
+      },
+      { name: "Gallery", href: "/admin/dashboard/gallery", icon: Images },
+      { name: "Set Reviews", href: "/admin/dashboard/reviews", icon: Star },
+    ],
+  },
+  {
+    label: "Guests and orders",
+    items: [
+      {
+        name: "User Messages",
+        href: "/admin/dashboard/messages",
+        icon: MessageSquare,
+      },
+      {
+        name: "Reservations",
+        href: "/admin/dashboard/reservations",
+        icon: CalendarCheck,
+      },
+      { name: "Delivery", href: "/admin/dashboard/delivery", icon: Truck },
+    ],
+  },
+  {
+    label: null,
+    items: [
+      { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
+    ],
+  },
+];
+
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+
+const focusRing =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F2A93B]";
+
+function NavItem({ item, active, collapsed, onNavigate }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      title={collapsed ? item.name : undefined}
+      aria-current={active ? "page" : undefined}
+      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${focusRing} ${
+        collapsed ? "justify-center" : ""
+      } ${
+        active
+          ? "bg-[#F2A93B]/14 text-[#F2A93B]"
+          : "text-[#D9C6A8] hover:bg-white/5 hover:text-[#F3E7D3]"
+      }`}
+    >
+      {active && (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-[#F2A93B]"
+        />
+      )}
+      <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+      {collapsed ? (
+        <span className="sr-only">{item.name}</span>
+      ) : (
+        <span className="truncate">{item.name}</span>
+      )}
+    </Link>
+  );
+}
+
+function SidebarContent({
+  collapsed = false,
+  isActive,
+  onNavigate,
+  onLogout,
+  onClose,
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Brand */}
+      <div
+        className={`flex items-center gap-3 px-4 pb-5 pt-6 ${collapsed ? "justify-center px-2" : ""}`}
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#F2A93B] text-[#2A1206] shadow-lg shadow-black/30">
+          <Flame className="h-5 w-5" aria-hidden="true" />
+        </span>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-serif text-lg font-bold leading-tight text-[#F3E7D3]">
+              Tandoori Koti
+            </p>
+            <p className="truncate text-xs text-[#D9C6A8]/70">
+              Restaurant admin
+            </p>
+          </div>
+        )}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close menu"
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#D9C6A8] transition-colors hover:bg-white/10 hover:text-[#F3E7D3] ${focusRing}`}
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav
+        aria-label="Admin"
+        className="min-h-0 flex-1 overflow-y-auto px-3 pb-4"
+      >
+        {NAV_GROUPS.map((group, gi) => (
+          <div key={gi} className={gi === 0 ? "" : "mt-5"}>
+            {group.label &&
+              (collapsed ? (
+                <div
+                  className="mx-3 mb-2 border-t border-white/10"
+                  aria-hidden="true"
+                />
+              ) : (
+                <p className="mb-1.5 px-3 text-xs font-medium text-[#D9C6A8]/55">
+                  {group.label}
+                </p>
+              ))}
+            {!group.label && gi !== 0 && collapsed && (
+              <div
+                className="mx-3 mb-2 border-t border-white/10"
+                aria-hidden="true"
+              />
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <NavItem
+                  key={item.href}
+                  item={item}
+                  active={isActive(item.href)}
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* Account */}
+      <div className="border-t border-white/10 p-3">
+        <div
+          className={`flex items-center gap-3 rounded-xl px-2 py-2 ${collapsed ? "justify-center" : ""}`}
+        >
+          <span
+            aria-hidden="true"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#3B1511] font-serif text-base font-bold text-[#F2A93B] ring-1 ring-[#F2A93B]/40"
+          >
+            T
+          </span>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-[#F3E7D3]">
+                tandoori_admin
+              </p>
+              <p className="truncate text-xs text-[#D9C6A8]/70">
+                Administrator
+              </p>
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          title={collapsed ? "Sign out" : undefined}
+          className={`mt-2 flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-300 transition-colors hover:bg-rose-500/15 hover:text-rose-200 ${focusRing} ${
+            collapsed ? "justify-center" : ""
+          }`}
+        >
+          <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+          {collapsed ? (
+            <span className="sr-only">Sign out</span>
+          ) : (
+            <span>Sign out</span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const reduce = useReducedMotion();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
-  // 1. If on login page, render clean full-screen form without sidebar/header
+  // Close the drawer when the route changes
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  // While the drawer is open: Escape closes it and the page behind it does not scroll
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setMobileNavOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [mobileNavOpen]);
+
+  // If on the login page, render the clean full-screen form without sidebar/header
   if (pathname === "/admin/login") {
     return <>{children}</>;
   }
 
-  // 2. Comprehensive cookie cleanup and redirect
+  // Comprehensive cookie cleanup and redirect
   const handleLogout = () => {
     Cookies.remove("admin_token", { path: "/" });
     document.cookie =
@@ -24,153 +276,152 @@ export default function AdminLayout({ children }) {
     router.refresh();
   };
 
-  const navItems = [
-    { name: "Overview", href: "/admin/dashboard" },
-    { name: "Add / Edit Dish", href: "/admin/dashboard/add-dish" },
-    { name: "Buffet Schedule", href: "/admin/dashboard/buffet" },
-    { name: "User Messages", href: "/admin/dashboard/messages" },
-    { name: "Reservations", href: "/admin/dashboard/reservations" },
-  ];
+  // The Overview link only matches exactly; every other link also matches its sub-pages
+  const isActive = (href) =>
+    href === "/admin/dashboard"
+      ? pathname === href
+      : pathname === href || pathname.startsWith(`${href}/`);
 
-  const currentPage =
-    navItems.find((item) => item.href === pathname)?.name || "Dashboard";
+  const currentItem = ALL_ITEMS.find((item) => isActive(item.href));
+  const CurrentIcon = currentItem?.icon ?? LayoutDashboard;
+  const currentPage = currentItem?.name ?? "Dashboard";
 
-  const SidebarContent = (
-    <>
-      <div className="space-y-8">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">
-            Restaurant CMS
-          </span>
-          <h1 className="text-xl font-bold text-slate-900 mt-3 tracking-tight">
-            Tandoori Koti
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Admin Management Portal
-          </p>
-        </div>
-
-        <nav className="space-y-1.5">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileNavOpen(false)}
-                className={`flex items-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-amber-50 text-amber-800 font-semibold shadow-xs"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Sidebar Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer"
-      >
-        Sign Out
-      </button>
-    </>
-  );
+  const drawerTransition = {
+    duration: reduce ? 0 : 0.28,
+    ease: [0.22, 1, 0.36, 1],
+  };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-800 font-sans">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-200/80 flex-col justify-between p-6 shadow-xs shrink-0">
-        {SidebarContent}
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-800">
+      {/* Desktop sidebar */}
+      <aside
+        className={`sticky top-0 hidden h-screen shrink-0 bg-[#1C0D0A] shadow-xl shadow-black/20 transition-[width] duration-300 lg:block ${
+          collapsed ? "w-[76px]" : "w-64"
+        }`}
+      >
+        <SidebarContent
+          collapsed={collapsed}
+          isActive={isActive}
+          onLogout={handleLogout}
+        />
       </aside>
 
-      {/* Mobile Sidebar Drawer + Overlay */}
-      {mobileNavOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex">
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
+      {/* Mobile drawer + overlay */}
+      <AnimatePresence>
+        {mobileNavOpen && (
+          <motion.div
+            key="overlay"
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduce ? 0 : 0.2 }}
             onClick={() => setMobileNavOpen(false)}
             aria-hidden="true"
           />
-          {/* Drawer panel */}
-          <aside className="relative w-72 max-w-[80vw] bg-white flex flex-col justify-between p-6 shadow-xl animate-in slide-in-from-left duration-200">
-            <button
-              onClick={() => setMobileNavOpen(false)}
-              aria-label="Close menu"
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
-            {SidebarContent}
-          </aside>
-        </div>
-      )}
+        )}
+        {mobileNavOpen && (
+          <motion.aside
+            key="drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+            className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#1C0D0A] shadow-2xl lg:hidden"
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={drawerTransition}
+          >
+            <SidebarContent
+              isActive={isActive}
+              onNavigate={() => setMobileNavOpen(false)}
+              onLogout={handleLogout}
+              onClose={() => setMobileNavOpen(false)}
+            />
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-4 sm:px-6 lg:px-8 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Hamburger — mobile/tablet only */}
+      {/* Main content area */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            {/* Hamburger: phones and tablets */}
             <button
+              type="button"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Open menu"
-              className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors shrink-0"
+              aria-expanded={mobileNavOpen}
+              className={`-ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden ${focusRing}`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
-            <span className="text-xs sm:text-sm font-medium text-slate-500 truncate">
-              <span className="hidden sm:inline">Control Center / </span>
-              {currentPage}
+
+            {/* Collapse toggle: desktop */}
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-pressed={collapsed}
+              className={`-ml-2 hidden h-10 w-10 shrink-0 place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:grid ${focusRing}`}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <PanelLeftClose className="h-5 w-5" aria-hidden="true" />
+              )}
+            </button>
+
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 ring-1 ring-amber-200/70">
+              <CurrentIcon className="h-[18px] w-[18px]" aria-hidden="true" />
             </span>
+
+            <div className="min-w-0 leading-tight">
+              <p className="hidden truncate text-xs text-slate-500 sm:block">
+                Control Center
+              </p>
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {currentPage}
+              </p>
+            </div>
           </div>
 
-          {/* User Status & Header Logout Button */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></span>
-              <span className="text-sm font-medium text-slate-700">
-                tandoori_admin
-              </span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View website (opens in a new tab)"
+              className={`inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 ${focusRing}`}
             >
-              Logout
-            </button>
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">View site</span>
+            </a>
+
+            <div className="hidden items-center gap-2.5 border-l border-slate-200 pl-3 sm:flex">
+              <span
+                aria-hidden="true"
+                className="grid h-9 w-9 place-items-center rounded-full bg-[#1C0D0A] font-serif text-base font-bold text-[#F2A93B]"
+              >
+                T
+              </span>
+              <div className="leading-tight">
+                <p className="text-sm font-medium text-slate-800">
+                  tandoori_admin
+                </p>
+                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                    aria-hidden="true"
+                  />
+                  Online
+                </p>
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

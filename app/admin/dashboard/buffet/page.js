@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useApi } from "@/hook/useApi";
+import { alert } from "../../../../lib/alert";
 
 const WEEKDAYS = [
   "Maanantai / Monday",
@@ -38,7 +39,7 @@ export default function BuffetManagerPage() {
     try {
       const [dishesRes, schedRes] = await Promise.all([
         request({ method: "GET", url: "/menu/regular" }),
-        request({ method: "GET", url: "/menu/buffet" }),
+        request({ method: "GET", url: "/menu/buffetAdmin" }),
       ]);
 
       setAllDishes(dishesRes?.data || []);
@@ -129,10 +130,8 @@ export default function BuffetManagerPage() {
     e.preventDefault();
 
     if (!selectedDate) {
-      setMessage({
-        text: "Please pick a calendar date.",
-        type: "error",
-      });
+      alert.error("Date Required", "Please pick a calendar date.");
+
       return;
     }
 
@@ -158,33 +157,33 @@ export default function BuffetManagerPage() {
         },
       });
 
-      setMessage({
-        text: "Buffet schedule successfully saved!",
-        type: "success",
-      });
+      alert.success(
+        "Buffet Scheduled!",
+        "The buffet schedule was saved successfully.",
+      );
 
       setSelectedDate("");
       setSelectedDishIds([]);
 
       loadData();
     } catch (err) {
-      setMessage({
-        text: err.response?.data?.error || "Failed to schedule buffet.",
-        type: "error",
-      });
+      alert.error(
+        "Failed to schedule buffet.",
+        err.response?.data?.error || "Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDeleteSchedule = async (id, dateStr) => {
-    if (
-      !window.confirm(
-        `Delete buffet schedule for ${new Date(dateStr).toLocaleDateString()}?`,
-      )
-    ) {
-      return;
-    }
+    const result = await alert.confirm({
+      title: "Are you sure?",
+      text: `Delete buffet schedule for ${new Date(dateStr).toLocaleDateString()}?`,
+      confirmText: "Yes, Delete",
+      cancelText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       await request({
@@ -194,7 +193,8 @@ export default function BuffetManagerPage() {
 
       loadData();
     } catch (err) {
-      console.error("Failed to delete buffet schedule:", err);
+		alert.err("Failed to delete buffet schedule:",err)
+    //   console.error("Failed to delete buffet schedule:", err);
     }
   };
 

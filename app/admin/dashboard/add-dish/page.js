@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useApi } from "@/hook/useApi";
 import { PenLine, SkipBack, SkipForward, Trash } from "lucide-react";
+import { alert } from "../../../../lib/alert";
 
 const CATEGORIES = [
   { en: "Starters", fi: "Alkuruoat" },
@@ -22,6 +23,32 @@ const CATEGORIES = [
 
 const ITEMS_PER_PAGE = 7;
 
+// Must match the limits in the backend (utils/servingFields.js)
+const MAX_SERVINGS = 20;
+const MAX_LABEL_LENGTH = 60;
+const SERVING_SHORTCUTS = [1, 2, 3, 4];
+const MAX_CHEF_PICKS = 6; // must match MAX_CHEF_PICKS in the backend (utils/chefPickFields.js)
+const MAX_TAG_LENGTH = 40;
+
+const EMPTY_FORM = {
+  categoryEn: CATEGORIES[0].en,
+  categoryFi: CATEGORIES[0].fi,
+  nameFi: "",
+  nameEn: "",
+  preparationFi: "",
+  preparationEn: "",
+  storyFi: "",
+  storyEn: "",
+  price: "",
+  servings: "",
+  portionLabelEn: "",
+  portionLabelFi: "",
+  isChefPick: false,
+  chefPickOrder: "",
+  chefTagEn: "",
+  chefTagFi: "",
+};
+
 export default function AddDishAndManagePage() {
   const { request } = useApi();
 
@@ -36,17 +63,7 @@ export default function AddDishAndManagePage() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const [formData, setFormData] = useState({
-    categoryEn: CATEGORIES[0].en,
-    categoryFi: CATEGORIES[0].fi,
-    nameFi: "",
-    nameEn: "",
-    preparationFi: "",
-    preparationEn: "",
-    storyFi: "",
-    storyEn: "",
-    price: "",
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
   // Table Search & Pagination States
   const [searchQuery, setSearchQuery] = useState("");
@@ -81,7 +98,9 @@ export default function AddDishAndManagePage() {
         item.preparationEn?.toLowerCase().includes(query) ||
         item.preparationFi?.toLowerCase().includes(query) ||
         item.storyEn?.toLowerCase().includes(query) ||
-        item.storyFi?.toLowerCase().includes(query),
+        item.storyFi?.toLowerCase().includes(query) ||
+        item.portionLabelEn?.toLowerCase().includes(query) ||
+        item.portionLabelFi?.toLowerCase().includes(query),
     );
   }, [items, searchQuery]);
 
@@ -91,6 +110,21 @@ export default function AddDishAndManagePage() {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredItems.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredItems, currentPage]);
+
+  // How the serving info will read to customers, shown as a live preview under the fields
+  const servingPreview = useMemo(() => {
+    const n = parseInt(formData.servings, 10);
+    const hasNumber = Number.isInteger(n) && n > 0;
+    const en = [
+      hasNumber ? `Serves ${n}` : null,
+      formData.portionLabelEn.trim() || null,
+    ].filter(Boolean);
+    const fi = [
+      hasNumber ? `${n} hengelle` : null,
+      formData.portionLabelFi.trim() || null,
+    ].filter(Boolean);
+    return { en: en.join(" · "), fi: fi.join(" · ") };
+  }, [formData.servings, formData.portionLabelEn, formData.portionLabelFi]);
 
   const handleCategoryChange = (e) => {
     const selectedEn = e.target.value;
@@ -115,17 +149,7 @@ export default function AddDishAndManagePage() {
     setExistingImageUrl("");
     setImageFile(null);
     setImagePreview(null);
-    setFormData({
-      categoryEn: CATEGORIES[0].en,
-      categoryFi: CATEGORIES[0].fi,
-      nameFi: "",
-      nameEn: "",
-      preparationFi: "",
-      preparationEn: "",
-      storyFi: "",
-      storyEn: "",
-      price: "",
-    });
+    setFormData(EMPTY_FORM);
   };
 
   const handleEditClick = (item) => {
@@ -143,6 +167,19 @@ export default function AddDishAndManagePage() {
         item.price !== undefined && item.price !== null
           ? item.price.toString()
           : "",
+      servings:
+        item.servings !== undefined && item.servings !== null
+          ? String(item.servings)
+          : "",
+      portionLabelEn: item.portionLabelEn || "",
+      portionLabelFi: item.portionLabelFi || "",
+      isChefPick: Boolean(item.isChefPick),
+      chefPickOrder:
+        item.chefPickOrder !== undefined && item.chefPickOrder !== null
+          ? String(item.chefPickOrder)
+          : "",
+      chefTagEn: item.chefTagEn || "",
+      chefTagFi: item.chefTagFi || "",
     });
     setExistingImageUrl(item.imageUrl || "");
     setImageFile(null);
@@ -152,18 +189,25 @@ export default function AddDishAndManagePage() {
   };
 
   const handleDelete = async (id, nameEn) => {
-    if (!window.confirm(`Are you sure you want to delete "${nameEn}"?`)) return;
+    const result = await alert.confirm({
+      title: "Are you sure?",
+      text: "This dish will be permanently deleted.",
+      confirmText: "Yes, Delete",
+      cancelText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
 
     try {
       await request({ method: "DELETE", url: `/menu/regular/${id}` });
-      setMessage({
-        text: `"${nameEn}" deleted successfully.`,
-        type: "success",
-      });
+      alert.success(
+        "Dish Deleted!",
+        `The dish "${nameEn}" was deleted successfully.`,
+      );
+
       fetchItems();
     } catch (err) {
       console.error("Delete Error:", err);
-      setMessage({ text: "Failed to delete dish.", type: "error" });
+      alert.error("Failed to delete dish.", "Please try again.");
     }
   };
 
@@ -193,6 +237,19 @@ export default function AddDishAndManagePage() {
         ...formData,
         price: parseFloat(formData.price),
         imageUrl: uploadedUrl,
+        // Empty fields are sent as null so that editing a dish can clear its serving info
+        servings:
+          formData.servings === "" ? null : parseInt(formData.servings, 10),
+        portionLabelEn: formData.portionLabelEn.trim() || null,
+        portionLabelFi: formData.portionLabelFi.trim() || null,
+        // Chef's recommendation. The order only matters for dishes that are picks.
+        isChefPick: Boolean(formData.isChefPick),
+        chefPickOrder:
+          formData.isChefPick && formData.chefPickOrder !== ""
+            ? parseInt(formData.chefPickOrder, 10)
+            : null,
+        chefTagEn: formData.chefTagEn.trim() || null,
+        chefTagFi: formData.chefTagFi.trim() || null,
       };
 
       // 2. Add or Edit Record
@@ -202,24 +259,30 @@ export default function AddDishAndManagePage() {
           url: `/menu/regular/${editingId}`,
           data: payload,
         });
-        setMessage({ text: "Dish updated successfully!", type: "success" });
+
+        alert.success("Dish Updated!", "The dish was updated successfully.");
       } else {
         await request({
           method: "POST",
           url: "/menu/regular",
           data: payload,
         });
-        setMessage({ text: "Dish added successfully!", type: "success" });
+        alert.success("Dish Added!", "The dish was added successfully.");
       }
 
       resetForm();
       fetchItems();
     } catch (err) {
-      setMessage({
-        text:
-          err.response?.data?.error || "Operation failed. Please try again.",
-        type: "error",
-      });
+      // The API can answer with { error } or { message, errors: { field: "..." } }
+      const data = err.response?.data;
+      const fieldErrors = data?.errors
+        ? Object.values(data.errors).join(" ")
+        : "";
+      const text = [data?.error || data?.message, fieldErrors]
+        .filter(Boolean)
+        .join(" ");
+
+      alert.error("Operation failed.", text || "Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -415,6 +478,241 @@ export default function AddDishAndManagePage() {
             </div>
           </div>
 
+          {/* Serving info (optional): shown to customers so they know how much food a dish is */}
+          <div className="space-y-4 pt-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-800">
+                Serving Info (Optional)
+              </label>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Shown to customers when they order
+              </span>
+            </div>
+
+            {/* Number of people */}
+            <div>
+              <label
+                htmlFor="dish-servings"
+                className="block text-xs font-medium text-slate-600 mb-1.5"
+              >
+                Serves (number of people)
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  id="dish-servings"
+                  type="number"
+                  inputMode="numeric"
+                  step="1"
+                  min="1"
+                  max={MAX_SERVINGS}
+                  placeholder="e.g. 2"
+                  value={formData.servings}
+                  onChange={(e) =>
+                    setFormData({ ...formData, servings: e.target.value })
+                  }
+                  className="w-28 bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                />
+                {SERVING_SHORTCUTS.map((n) => {
+                  const active = formData.servings === String(n);
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, servings: String(n) })
+                      }
+                      aria-pressed={active}
+                      className={`w-9 h-9 text-sm font-semibold rounded-lg border transition-colors ${
+                        active
+                          ? "bg-amber-600 text-white border-amber-600"
+                          : "bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+                {formData.servings !== "" && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, servings: "" })}
+                    className="text-xs text-slate-500 font-semibold hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Portion size labels */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label
+                  htmlFor="dish-portion-en"
+                  className="block text-xs font-medium text-slate-600 mb-1.5"
+                >
+                  Portion Size (English)
+                </label>
+                <input
+                  id="dish-portion-en"
+                  type="text"
+                  maxLength={MAX_LABEL_LENGTH}
+                  placeholder="e.g. 6 pcs, 300 g"
+                  value={formData.portionLabelEn}
+                  onChange={(e) =>
+                    setFormData({ ...formData, portionLabelEn: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="dish-portion-fi"
+                  className="block text-xs font-medium text-slate-600 mb-1.5"
+                >
+                  Annoskoko (Suomeksi)
+                </label>
+                <input
+                  id="dish-portion-fi"
+                  type="text"
+                  maxLength={MAX_LABEL_LENGTH}
+                  placeholder="esim. 6 kpl, 300 g"
+                  value={formData.portionLabelFi}
+                  onChange={(e) =>
+                    setFormData({ ...formData, portionLabelFi: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Live preview */}
+            {(servingPreview.en || servingPreview.fi) && (
+              <div className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 space-y-0.5">
+                <p>
+                  Customers will see:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {servingPreview.en || "—"}
+                  </span>{" "}
+                  <span className="text-slate-400">(English)</span>
+                </p>
+                <p>
+                  <span className="invisible">Customers will see: </span>
+                  <span className="font-semibold text-slate-700">
+                    {servingPreview.fi || "—"}
+                  </span>{" "}
+                  <span className="text-slate-400">(Suomi)</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Chef's recommendation (optional): shows this dish in the home page section */}
+          <div className="space-y-4 pt-3 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-800">
+                Chef&apos;s Recommendation (Optional)
+              </label>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Home page section, up to {MAX_CHEF_PICKS} dishes
+              </span>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={formData.isChefPick}
+                onChange={(e) =>
+                  setFormData({ ...formData, isChefPick: e.target.checked })
+                }
+                className="mt-0.5 h-4 w-4 accent-amber-600"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">
+                  Show in the Chef&apos;s Recommended section
+                </span>
+                <span className="block text-xs text-slate-500 mt-0.5">
+                  Uses this dish&apos;s photo, name, description, price and
+                  serving info.
+                </span>
+              </span>
+            </label>
+
+            {formData.isChefPick && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label
+                    htmlFor="dish-chef-order"
+                    className="block text-xs font-medium text-slate-600 mb-1.5"
+                  >
+                    Position (1 = first)
+                  </label>
+                  <input
+                    id="dish-chef-order"
+                    type="number"
+                    inputMode="numeric"
+                    step="1"
+                    min="1"
+                    max="99"
+                    placeholder="e.g. 1"
+                    value={formData.chefPickOrder}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        chefPickOrder: e.target.value,
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="dish-chef-tag-en"
+                    className="block text-xs font-medium text-slate-600 mb-1.5"
+                  >
+                    Badge (English)
+                  </label>
+                  <input
+                    id="dish-chef-tag-en"
+                    type="text"
+                    maxLength={MAX_TAG_LENGTH}
+                    placeholder="e.g. House signature"
+                    value={formData.chefTagEn}
+                    onChange={(e) =>
+                      setFormData({ ...formData, chefTagEn: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="dish-chef-tag-fi"
+                    className="block text-xs font-medium text-slate-600 mb-1.5"
+                  >
+                    Merkki (suomi)
+                  </label>
+                  <input
+                    id="dish-chef-tag-fi"
+                    type="text"
+                    maxLength={MAX_TAG_LENGTH}
+                    placeholder="esim. talon tunnus"
+                    value={formData.chefTagFi}
+                    onChange={(e) =>
+                      setFormData({ ...formData, chefTagFi: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+            {formData.isChefPick && (
+              <p className="text-xs text-slate-500">
+                The badge is the small label above the dish name. If left empty,
+                the dish&apos;s category is shown instead.
+              </p>
+            )}
+          </div>
+
           {/* Image Upload Zone */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
@@ -523,6 +821,7 @@ export default function AddDishAndManagePage() {
                 <th className="py-3.5 px-3">Dish (EN / FI)</th>
                 <th className="py-3.5 px-3">Category</th>
                 <th className="py-3.5 px-3">Preparation & Story</th>
+                <th className="py-3.5 px-3">Serving</th>
                 <th className="py-3.5 px-3">Price</th>
                 <th className="py-3.5 px-3 text-right">Actions</th>
               </tr>
@@ -530,13 +829,13 @@ export default function AddDishAndManagePage() {
             <tbody className="divide-y divide-slate-100 text-sm">
               {loadingItems ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     Loading dishes...
                   </td>
                 </tr>
               ) : paginatedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     No dishes found matching your query.
                   </td>
                 </tr>
@@ -569,6 +868,14 @@ export default function AddDishAndManagePage() {
                           <p className="text-xs text-slate-500 mt-0.5">
                             {item.nameFi}
                           </p>
+                          {item.isChefPick && (
+                            <span className="inline-block mt-1 text-[10px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                              Chef&apos;s pick
+                              {item.chefPickOrder
+                                ? ` #${item.chefPickOrder}`
+                                : ""}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -593,6 +900,28 @@ export default function AddDishAndManagePage() {
                         <span className="inline-block mt-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
                           Story Added
                         </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-xs text-slate-600 whitespace-nowrap">
+                      {item.servings ||
+                      item.portionLabelEn ||
+                      item.portionLabelFi ? (
+                        <div>
+                          {item.servings ? (
+                            <p className="font-semibold text-slate-700">
+                              {item.servings}{" "}
+                              {item.servings === 1 ? "person" : "people"}
+                            </p>
+                          ) : null}
+                          {item.portionLabelEn && <p>{item.portionLabelEn}</p>}
+                          {item.portionLabelFi && (
+                            <p className="text-slate-400">
+                              {item.portionLabelFi}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">—</span>
                       )}
                     </td>
                     <td className="py-3 px-3 font-semibold text-slate-900 whitespace-nowrap">
@@ -678,6 +1007,12 @@ export default function AddDishAndManagePage() {
                     <span className="inline-block mt-1.5 text-[10px] font-medium px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200/50 rounded-md">
                       {item.categoryEn}
                     </span>
+                    {item.isChefPick && (
+                      <span className="inline-block mt-1.5 ml-1.5 text-[10px] font-semibold px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-md">
+                        Chef&apos;s pick
+                        {item.chefPickOrder ? ` #${item.chefPickOrder}` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -685,6 +1020,16 @@ export default function AddDishAndManagePage() {
                   <p className="line-clamp-2 font-medium text-slate-700">
                     {item.preparationEn}
                   </p>
+                  {(item.servings || item.portionLabelEn) && (
+                    <p className="mt-1 text-slate-500">
+                      {[
+                        item.servings ? `Serves ${item.servings}` : null,
+                        item.portionLabelEn || null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
                   {(item.storyEn || item.storyFi) && (
                     <span className="inline-block mt-1.5 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
                       Story Added
