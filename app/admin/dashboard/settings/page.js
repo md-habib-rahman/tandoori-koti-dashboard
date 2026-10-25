@@ -17,6 +17,7 @@ import { useApi } from "@/hook/useApi";
 import { alert } from "@/lib/alert";
 
 const INITIAL_SETTINGS = {
+  isEnableDelivery: false,
   isDeliveryFee: false,
   deliveryFee: "",
   isVat: false,
@@ -65,6 +66,7 @@ const CHARGES = [
 function normalizeSettings(data) {
   return {
     isDeliveryFee: Boolean(data.isDeliveryFee),
+    isEnableDelivery: Boolean(data.isEnableDelivery),
     deliveryFee: data.deliveryFee ?? "",
     isVat: Boolean(data.isVat),
     VatAmount: data.VatAmount ?? "",
@@ -88,9 +90,7 @@ function ChargeCard({ charge, settings, onChange }) {
           </div>
 
           <div>
-            <h2 className="font-semibold text-slate-800">
-              {charge.title}
-            </h2>
+            <h2 className="font-semibold text-slate-800">{charge.title}</h2>
             <p className="mt-1 text-sm leading-5 text-slate-500">
               {charge.description}
             </p>
@@ -159,8 +159,7 @@ export default function AdminSettingsPage() {
   const { request, isLoading } = useApi();
 
   const [settings, setSettings] = useState(INITIAL_SETTINGS);
-  const [initialSettings, setInitialSettings] =
-    useState(INITIAL_SETTINGS);
+  const [initialSettings, setInitialSettings] = useState(INITIAL_SETTINGS);
   const [isFetching, setIsFetching] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -176,9 +175,7 @@ export default function AdminSettingsPage() {
         url: "/settings",
       });
 
-      const normalized = normalizeSettings(
-        response.data ?? response,
-      );
+      const normalized = normalizeSettings(response.data ?? response);
 
       setSettings(normalized);
       setInitialSettings(normalized);
@@ -249,22 +246,15 @@ export default function AdminSettingsPage() {
 
     const payload = {
       isDeliveryFee: settings.isDeliveryFee,
+      isEnableDelivery: settings.isEnableDelivery,
       deliveryFee:
-        settings.deliveryFee === ""
-          ? null
-          : Number(settings.deliveryFee),
+        settings.deliveryFee === "" ? null : Number(settings.deliveryFee),
 
       isVat: settings.isVat,
-      VatAmount:
-        settings.VatAmount === ""
-          ? null
-          : Number(settings.VatAmount),
+      VatAmount: settings.VatAmount === "" ? null : Number(settings.VatAmount),
 
       isTax: settings.isTax,
-      taxAmount:
-        settings.taxAmount === ""
-          ? null
-          : Number(settings.taxAmount),
+      taxAmount: settings.taxAmount === "" ? null : Number(settings.taxAmount),
 
       isServiceCharge: settings.isServiceCharge,
       serviceChargeAmount:
@@ -282,9 +272,7 @@ export default function AdminSettingsPage() {
         data: payload,
       });
 
-      const normalized = normalizeSettings(
-        response.data ?? response,
-      );
+      const normalized = normalizeSettings(response.data ?? response);
 
       setSettings(normalized);
       setInitialSettings(normalized);
@@ -331,8 +319,8 @@ export default function AdminSettingsPage() {
             </h1>
 
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-              Manage delivery fees, VAT, tax, and service charges
-              applied to customer orders.
+              Manage delivery fees, VAT, tax, and service charges applied to
+              customer orders.
             </p>
           </div>
 
@@ -348,7 +336,51 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Summary */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <label
+              className={`flex cursor-pointer flex-col justify-between rounded-xl border p-4 transition ${
+                settings.isEnableDelivery
+                  ? "border-emerald-300 bg-emerald-50"
+                  : "border-slate-200 bg-white hover:border-amber-300"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate text-xs font-medium text-slate-500">
+                  Delivery Service
+                </p>
+                <Truck
+                  className={`h-4 w-4 ${
+                    settings.isEnableDelivery
+                      ? "text-emerald-500"
+                      : "text-slate-400"
+                  }`}
+                />
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <span
+                  className={`text-sm font-bold ${
+                    settings.isEnableDelivery
+                      ? "text-emerald-600"
+                      : "text-slate-500"
+                  }`}
+                >
+                  {settings.isEnableDelivery ? "Enabled" : "Disabled"}
+                </span>
+
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-success checkbox-lg"
+                  checked={settings.isEnableDelivery}
+                  onChange={(event) =>
+                    handleChange("isEnableDelivery", event.target.checked)
+                  }
+                  aria-label="Enable delivery service"
+                />
+              </div>
+            </label>
+          </div>
           {CHARGES.map((charge) => {
             const enabled = settings[charge.enabledField];
 
@@ -369,9 +401,7 @@ export default function AdminSettingsPage() {
                   />
                   <span
                     className={`text-sm font-semibold ${
-                      enabled
-                        ? "text-emerald-400"
-                        : "text-slate-500"
+                      enabled ? "text-emerald-400" : "text-slate-500"
                     }`}
                   >
                     {enabled ? "Active" : "Inactive"}
