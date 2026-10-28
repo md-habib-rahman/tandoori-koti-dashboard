@@ -73,6 +73,11 @@ const NAV_GROUPS = [
     label: null,
     items: [
       { name: "Settings", href: "/admin/dashboard/settings", icon: Settings },
+      {
+        name: "Users Management",
+        href: "/admin/dashboard/user",
+        icon: Settings,
+      },
     ],
   },
 ];

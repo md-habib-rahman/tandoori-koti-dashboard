@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useApi } from "@/hook/useApi";
 import { alert } from "../../../../lib/alert";
+import LunchPriceForm from "../../../components/buffet/LunchPriceForm";
 
 const WEEKDAYS = [
   "Maanantai / Monday",
@@ -193,14 +194,15 @@ export default function BuffetManagerPage() {
 
       loadData();
     } catch (err) {
-		alert.err("Failed to delete buffet schedule:",err)
-    //   console.error("Failed to delete buffet schedule:", err);
+      alert.err("Failed to delete buffet schedule:", err);
+      //   console.error("Failed to delete buffet schedule:", err);
     }
   };
 
   return (
     <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-0 py-4 sm:py-6 space-y-6 sm:space-y-8 lg:space-y-10">
       {/* Header */}
+      <LunchPriceForm />
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           Buffet Schedule Manager
